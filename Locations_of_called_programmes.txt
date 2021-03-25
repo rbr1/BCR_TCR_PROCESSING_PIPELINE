@@ -1,0 +1,7 @@
+quasr_location /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/QUASR_v7.01/
+ref_library /well/immune-rep/shared/CODE/LIBRARY/
+cd_hit_directory /well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/cd-hit-v4.5.7-2011-12-16/
+blastall /apps/htseq/ncbi-blast/bin/blastn
+Local_immune_repertoire_annotator /well/immune-rep/shared/CODE/ANNOTATION_OF_TCRs_CDR3_REGIONS/Local_immune_repertoire_annotator_1.0.py
+read_join /well/immune-rep/shared/CODE/INSTALLED_PROGRAMMES/FLASH-1.2.11/flash
+codon_table /well/immune-rep/shared/CODE/LIBRARY/Codon_table2.txt 
