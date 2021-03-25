@@ -1,7 +1,7 @@
 # BCR_TCR_PROCESSING_PIPELINE
 BCR/TCR processing pipeline for NGS data
 
-A summary of the pipeline is described below:
+Please see the manual for full details. A summary of the pipeline is described below:
 Page 2 of 11
  
 **Stage 1:**
