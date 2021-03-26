@@ -33,7 +33,6 @@ from numpy import outer
 from operator import itemgetter, attrgetter, add
 import copy
 import random
-import networkx as nx
 
 def fasta_iterator(fh):
   while True:
@@ -235,40 +234,49 @@ def Get_Gini(n,v):
   return(giniIdx/100)
 
 def Get_constant_region_distribution(seq_file,constant_region_count_file,pat,annot_file):
-  fh=open(seq_file,"r")
-  #genes = [0]
-  #const=[]
   IHGDM_ind,cw_ind = [],[]
   IGHDM_seqs,counts = {},{}
-  for header,sequence in fasta_iterator(fh):
-    freq, const = map(int,header.split("__")[1].split("|")[0].split("_")), header.split("|")[1].split("_")
-    if(len(IHGDM_ind)==0):
-      IHGDM_ind = [i for i in range(len(const)) if const[i] in ["IGHD","IGHM"]]
-      cw_ind= [i for i in range(len(const)) if const[i] not in ["IGHD","IGHM"]]
-      for i in const:
-        counts[i] = 0
-      counts["class_switched"] = 0
-      counts["ALL"] = 0
-    nz = [i for i in range(len(freq)) if freq[i]!=0]
-    counts["ALL"] = counts["ALL"]+1
-    for i in nz: 
-      if(i in IHGDM_ind): 
-        IGHDM_seqs[header] = 1
-      else:counts["class_switched"] = counts["class_switched"]+1
-      counts[const[i]] = counts[const[i]]+1
-  fh.close()
-  counts["IGHD/M_unmutated"] = 0
-  counts["IGHD/M_mutated"] = 0
+  start = 0
   fh=open(annot_file, "r")
+  muts = {}
   for l in fh: 
     if(l[0]!="#"):
       l=l.strip().split()
-      if(l[0] in IGHDM_seqs):
-        if(len(l)>=19):
-          mm_v,mm_j =  int(l[17]),int(l[18])
-          if(mm_v+mm_j <= 4):mut = "IGHD/M_unmutated"
-          else: mut = "IGHD/M_mutated"
-          counts[mut] = counts[mut]+1
+      if(len(l)>=19):
+        mm_v,mm_j =  int(l[17]),int(l[18])
+        muts[l[0].split("__")[0]] = mm_v+mm_j
+  fh.close()
+  fh=open(seq_file,"r")
+  for header,sequence in fasta_iterator(fh):
+    header1 = header.split("__")[0]
+    if(header1 in muts): 
+      freq, const = map(int,header.split("__")[1].split("|")[0].split("_")), header.split("|")[1].split("_")
+      if(start==0):
+        start = 1
+        tcr = [i for i in range(len(const)) if const[i].count("TR")!=0]
+        if(len(tcr)>0):tcr = "TRUE"
+        IHGDM_ind = [i for i in range(len(const)) if const[i] in ["IGHD","IGHM"]]
+        cw_ind= [i for i in range(len(const)) if const[i] not in ["IGHD","IGHM"]]
+        for i in const:
+          counts[i] = 0
+        counts["ALL"] = 0
+        if(tcr != "TRUE"):
+          counts["class_switched"] = 0
+          counts["IGHD/M_unmutated"] = 0
+          counts["IGHD/M_mutated"] = 0
+      nz = [i for i in range(len(freq)) if freq[i]!=0]
+      counts["ALL"] = counts["ALL"]+sum(freq)
+      for i in nz: 
+        if(tcr != "TRUE"):
+          if(i in IHGDM_ind): 
+            mm = muts[header1]
+            if(mm <= 4):mut = "IGHD/M_unmutated"
+            else: mut = "IGHD/M_mutated"
+            counts[mut] = counts[mut]+freq[i]
+          else:counts["class_switched"] = counts["class_switched"]+freq[i]
+          counts[const[i]] = counts[const[i]]+freq[i]
+        else:
+          counts[const[i]] = counts[const[i]]+freq[i]
   fh.close()
   genes,gene_ids = [],[]
   for i in counts: 
@@ -298,8 +306,8 @@ def Get_gene_frequencies(annot_file, gene_freq_file,gene,id):
           if(v in genes):genes[v]=genes[v]+f
           else:genes[v]=f
           found = found+f
-        else:
-          print l
+        #else:
+        #  print l
       elif(len(l)==9):
         if(l[0].count("__")!=0):
           f, v, j = sum(map(int,l[0].split("__")[1].split("|")[0].split("_"))), l[1].split("*")[0], l[3].split("*")[0]
@@ -309,8 +317,8 @@ def Get_gene_frequencies(annot_file, gene_freq_file,gene,id):
           if(v in genes):genes[v]=genes[v]+f
           else:genes[v]=f
           found = found+f
-      else:
-        print l
+     # else:
+     #   print l
   fh.close()
   print "TOTAL READS:",total,"FOUND READS:", found
   out=''
@@ -372,7 +380,7 @@ def Get_annotation_for_clusters(annot_file, ids):
         c = ids[ids_find[l[0].split("__")[0]]]
         if(len(l)>=14):
           v,j = l[1],l[13]
-          if(j.count("J")==0):print l
+          #if(j.count("J")==0):print l
           vj= l[1]+"\t"+l[13]
           cluster_annot[c][vj][l[0]].value=1
           if(len(l)>=20 and l[19].count("CDR")==0):
@@ -558,8 +566,8 @@ pwd = "/well/immune-rep/shared/CODE/BCR_TCR_PROCESSING_PIPELINE/"#commands.getou
 ref_locations = pwd+"/Locations_of_called_programmes.txt"
 locations = Get_locations(ref_locations)
 command = command.split(",")
-#constant_region = "TRUE"
-constant_region = "FALSE"
+constant_region = "TRUE"
+#constant_region = "FALSE"
 isotyper_primer_set = "INNER"
 print constant_region, isotyper_primer_set
 
